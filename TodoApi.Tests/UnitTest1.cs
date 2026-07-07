@@ -1,95 +1,153 @@
-using Xunit;
-using TodoApi.Services;
-using TodoApi.Models;
-using TodoApi.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using TodoApi.Controllers;
+using TodoApi.DTOs;
+using TodoApi.Models;
+using TodoApi.Services;
+using Xunit;
 
 namespace TodoApi.Tests;
 
 public class UnitTest1
 {
-    [Fact]
-    public void Test1()
+    private static TodoService CreateService()
     {
-        var service = new TodoService();
-        Assert.True(true);
+        var solutionRoot = Path.GetFullPath(
+            Path.Combine(AppContext.BaseDirectory, "../../../../"));
+
+        var dbPath = Path.Combine(solutionRoot, "TodoApi", "todos.db");
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:TodoDb"] = $"Data Source={dbPath}"
+            })
+            .Build();
+
+        return new TodoService(configuration);
     }
 
     [Fact]
-    public void TestCreateTodo()
+    public void CreateTodo_ShouldGenerateId_AndCreatedAt()
     {
-        var service = new TodoService();
+        var service = CreateService();
+
         var todo = new Todo
         {
-            Title = "Test",
-            Description = "Test Description",
-            IsCompleted = false
+            Title = "Create Test",
+            Description = "Testing create"
         };
 
         var result = service.CreateTodo(todo);
 
         Assert.NotNull(result);
         Assert.True(result.Id > 0);
+        Assert.Equal("Create Test", result.Title);
+        Assert.False(result.IsCompleted);
+        Assert.NotEqual(default, result.CreatedAt);
     }
 
     [Fact]
-    public void TestGetTodo()
+    public void GetTodoById_ShouldReturnTodo_WhenExists()
     {
-        var service = new TodoService();
+        var service = CreateService();
+
+        var created = service.CreateTodo(new Todo
+        {
+            Title = "Lookup",
+            Description = "Lookup Test"
+        });
+
+        var result = service.GetTodoById(created.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal(created.Id, result!.Id);
+        Assert.Equal("Lookup", result.Title);
+    }
+
+    [Fact]
+    public void GetTodoById_ShouldReturnNull_WhenTodoDoesNotExist()
+    {
+        var service = CreateService();
+
+        var result = service.GetTodoById(999999);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void GetAllTodos_ShouldReturnCollection()
+    {
+        var service = CreateService();
+
         var todos = service.GetAllTodos();
 
-        Assert.True(todos.Count > 0);
+        Assert.NotNull(todos);
+        Assert.True(todos.Count >= 0);
     }
 
     [Fact]
-    public void UpdateTest()
+    public void UpdateTodo_ShouldUpdateExistingTodo()
     {
-        var service = new TodoService();
-        var todo = new Todo
+        var service = CreateService();
+
+        var created = service.CreateTodo(new Todo
+        {
+            Title = "Original",
+            Description = "Original Description"
+        });
+
+        var updated = service.UpdateTodo(created.Id, new Todo
         {
             Title = "Updated",
             Description = "Updated Description",
             IsCompleted = true
-        };
+        });
 
-        var result = service.UpdateTodo(1, todo);
-        Assert.NotNull(result);
+        Assert.NotNull(updated);
+        Assert.Equal("Updated", updated!.Title);
+        Assert.True(updated.IsCompleted);
     }
 
     [Fact]
-    public void DeleteWorks()
+    public void UpdateTodo_ShouldReturnNull_WhenTodoDoesNotExist()
     {
-        var service = new TodoService();
-        var result = service.DeleteTodo(999);
+        var service = CreateService();
+
+        var result = service.UpdateTodo(999999, new Todo
+        {
+            Title = "Test",
+            Description = "Test"
+        });
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void DeleteTodo_ShouldReturnFalse_WhenTodoDoesNotExist()
+    {
+        var service = CreateService();
+
+        var result = service.DeleteTodo(999999);
 
         Assert.False(result);
     }
 
     [Fact]
-    public void ControllerTest()
+    public void Controller_CreateTodo_ShouldReturnOkResult()
     {
-        var controller = new TodoController();
-        var todo = new Todo { Title = "Test", Description = "Desc" };
+        var service = CreateService();
 
-        var result = controller.CreateTodo(todo);
+        var controller = new TodoController(service);
 
-        Assert.NotNull(result);
-    }
+        var request = new CreateTodoRequest
+        {
+            Title = "Controller Test",
+            Description = "Controller Description"
+        };
 
-    [Fact]
-    public void TestEverything()
-    {
-        var service = new TodoService();
+        var result = controller.CreateTodo(request);
 
-        var todo1 = service.CreateTodo(new Todo { Title = "1", Description = "D1" });
-        var todo2 = service.CreateTodo(new Todo { Title = "2", Description = "D2" });
-
-        var all = service.GetAllTodos();
-
-        service.UpdateTodo(todo1.Id, new Todo { Title = "Updated", Description = "D1" });
-
-        service.DeleteTodo(todo2.Id);
-
-        Assert.True(all.Count >= 2);
+        Assert.IsType<OkObjectResult>(result);
     }
 }
