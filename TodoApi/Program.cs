@@ -1,9 +1,12 @@
 using Microsoft.Data.Sqlite;
+using TodoApi.Interfaces;
+using TodoApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddScoped<ITodoService, TodoService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -29,7 +32,7 @@ app.Run();
 
 void InitializeDatabase()
 {
-    var connectionString = "Data Source=todos.db";
+    var connectionString = builder.Configuration.GetConnectionString("TodoDb");
     using var connection = new SqliteConnection(connectionString);
     connection.Open();
 
