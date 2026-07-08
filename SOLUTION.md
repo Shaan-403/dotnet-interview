@@ -27,10 +27,6 @@ After reviewing the original implementation, I identified several areas for impr
 
 - SQL statements were built using string interpolation, making the application vulnerable to SQL Injection.
 
-### Functional Bug
-
-- Newly created TODOs always returned `Id = 0` even though SQLite generated a valid primary key.
-
 ### Testing
 
 - Existing tests depended on the previous implementation and no longer worked after introducing dependency injection.
