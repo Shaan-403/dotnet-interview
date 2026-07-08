@@ -131,10 +131,20 @@ Although these would further improve the project, they would significantly incre
 
 ### Backward Compatibility
 
-I intentionally preserved the existing API routes (for example `POST /api/createTodo`) instead of redesigning them into REST-style endpoints.
+I intentionally preserved the existing API endpoints and HTTP methods to maintain backward compatibility with the existing application behaviour.
 
-This avoids breaking existing clients while still improving the internal architecture.
+Although a RESTful API would typically expose endpoints such as:
 
+- `GET /todos/{id}`
+- `POST /todos`
+- `PUT /todos/{id}` or `PATCH /todos/{id}`
+- `DELETE /todos/{id}`
+
+changing the existing routes (for example `POST /api/createTodo` and `POST /api/getTodo`) would introduce breaking API changes.
+
+Since the objective of the assignment was to review and improve the existing implementation rather than redesign the public API, I chose to preserve the current API contract while improving the internal architecture, security, maintainability, and testability.
+
+In a greenfield project, I would redesign the API to follow REST conventions with resource-based URLs and appropriate HTTP verbs.
 ---
 
 # How to Run
